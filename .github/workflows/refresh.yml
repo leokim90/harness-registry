@@ -36,11 +36,13 @@ jobs:
 
       - name: 수집 및 가공
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # 검색 5,000회/시간으로 완화
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}          # 검색 5,000회/시간으로 완화
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # 없으면 번역만 건너뛴다
         run: |
           python scripts/fetch.py --fresh
           python scripts/curate.py
           python scripts/readme.py
+          python scripts/translate.py
           python scripts/diff.py
 
       - name: 데이터 커밋
@@ -56,6 +58,7 @@ jobs:
           mkdir -p site/data
           cp index.html site/
           cp data/catalog.json data/deltas.json site/data/
+          [ -f data/ko.json ] && cp data/ko.json site/data/ || true
 
       - uses: actions/configure-pages@v5
         with:

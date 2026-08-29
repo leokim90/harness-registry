@@ -11,16 +11,29 @@ GitHub에 공개된 **Claude Code 하네스**(스킬·서브에이전트·플러
 scripts/fetch.py    GitHub 검색 API 26개 질의 → data/raw.json
 scripts/curate.py   분류·중복 제거·카테고리별 상한 → data/catalog.json
 scripts/readme.py   README 발췌 + 설치 명령 추출 → catalog.json 보강
+scripts/translate.py 설명·발췌 한국어 번역 → data/ko.json (원문 해시로 캐시)
 scripts/diff.py     직전 스냅샷 대비 신규·급상승·사라짐 → data/deltas.json
                     회차 스냅샷은 data/history.jsonl에 누적
 ```
 
-`.github/workflows/refresh.yml`이 매일 09:00 KST에 위 4단계를 돌리고,
+`.github/workflows/refresh.yml`이 매일 09:00 KST에 위 5단계를 돌리고,
 `data/`를 커밋한 뒤 `index.html` + `data/`를 GitHub Pages로 배포한다.
 수동 실행은 Actions 탭의 **Run workflow**.
 
 `index.html`은 데이터를 내장하지 않고 `data/catalog.json`을 런타임에 읽는다.
 따라서 데이터만 갱신되면 페이지는 자동으로 최신이 된다.
+`data/ko.json`이 있으면 한국어를 우선 표시하고, 상세 패널에서 원문을 펼쳐 볼 수 있다.
+
+## 번역 설정
+
+저장소 Settings → Secrets and variables → Actions에 `ANTHROPIC_API_KEY`를 등록하면
+매 회차마다 새로 들어온 저장소만 자동 번역된다. 원문 해시를 키로 캐시하므로
+이미 번역된 항목은 다시 호출하지 않는다.
+
+키가 없으면 번역 단계는 조용히 건너뛰고 페이지는 영문으로 표시된다.
+번역이 실패해도 워크플로는 죽지 않는다 — 수집 결과를 지키는 쪽이 우선이다.
+
+모델은 `TRANSLATE_MODEL` 환경변수로 바꿀 수 있다(기본 `claude-haiku-4-5-20251001`).
 
 ## 로컬 실행
 
@@ -29,6 +42,7 @@ export GH_TOKEN=ghp_...        # 없어도 되지만 느리다(검색 10회/분 
 python scripts/fetch.py --fresh
 python scripts/curate.py
 python scripts/readme.py
+python scripts/translate.py     # ANTHROPIC_API_KEY 없으면 자동으로 건너뜀
 python scripts/diff.py
 python -m http.server 8000     # http://localhost:8000
 ```
@@ -39,6 +53,7 @@ python -m http.server 8000     # http://localhost:8000
 - 카테고리별 노출 개수: `scripts/curate.py`의 `CAP`
 - 오탐 저장소 제외: 같은 파일의 `DENY_NAMES` / `DENY_WORDS`
 - 급상승 판정 창: `scripts/diff.py`의 `WINDOW_DAYS`
+- 번역 톤·규칙: `scripts/translate.py`의 `SYSTEM` 프롬프트
 
 ## 주의
 

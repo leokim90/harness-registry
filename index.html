@@ -108,6 +108,15 @@ select.ctl{background:var(--panel);border:1px solid var(--line-2);border-radius:
 .guide-one h4{margin:0 0 3px;font-size:13.5px;font-weight:600}
 .guide-one p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}
 .guide-one p em{font-style:normal;color:var(--ink-2)}
+.orig{margin-top:7px}
+.orig>summary{cursor:pointer;font-size:11.5px;color:var(--muted);list-style:none;
+  display:inline-flex;align-items:center;gap:5px}
+.orig>summary::-webkit-details-marker{display:none}
+.orig>summary::before{content:"▸";font-size:9px}
+.orig[open]>summary::before{content:"▾"}
+.orig>summary:hover{color:var(--accent-ink)}
+.orig p{margin:7px 0 0;font-size:12.5px;color:var(--muted);line-height:1.6;
+  padding-left:10px;border-left:1px solid var(--line)}
 .legend{padding:9px 0 0;font-size:11.5px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 
@@ -267,18 +276,21 @@ footer.foot{border-top:1px solid var(--line);padding:24px 0 44px;font-size:12.5p
   const ago = d => d===0?'오늘':(d===1?'어제':(d<30?d+'일 전':(d<365?Math.floor(d/30)+'개월 전':Math.floor(d/365)+'년 전')));
 
   let REPOS=[], DELTAS={new:[],surging:[],gone:[],has_baseline:false}, surgeMap={}, newSet=new Set();
+  let KO={};   // full_name -> {desc, summary} 한국어 번역. 없으면 원문을 쓴다.
   let favs = new Set(store.get('reg.favs',[]));
   const state = { cat:'all', q:'', sort:'stars', activeOnly:false, favOnly:false, view:'all' };
 
   async function boot(){
     try{
       const bust = '?t=' + Math.floor(Date.now()/300000);   // 5분 단위 캐시 무효화
-      const [cat, del] = await Promise.all([
+      const [cat, del, ko] = await Promise.all([
         fetch('data/catalog.json'+bust).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
-        fetch('data/deltas.json'+bust).then(r=>r.ok?r.json():null).catch(()=>null)
+        fetch('data/deltas.json'+bust).then(r=>r.ok?r.json():null).catch(()=>null),
+        fetch('data/ko.json'+bust).then(r=>r.ok?r.json():null).catch(()=>null)
       ]);
       REPOS = cat.repos;
       if(del) DELTAS = del;
+      if(ko) KO = ko;
       newSet = new Set(DELTAS.new||[]);
       (DELTAS.surging||[]).forEach(s => surgeMap[s.full_name]=s);
       $('#stamp').textContent = new Date(cat.generated).toLocaleString('ko-KR',{dateStyle:'medium',timeStyle:'short'});
@@ -330,6 +342,9 @@ footer.foot{border-top:1px solid var(--line);padding:24px 0 44px;font-size:12.5p
     });
   }
 
+  const koDesc = r => (KO[r.full_name] && KO[r.full_name].desc) || '';
+  const koSum  = r => (KO[r.full_name] && KO[r.full_name].summary) || '';
+
   function renderGuide(){
     const g = document.getElementById('guide');
     if(state.cat !== 'all'){
@@ -364,7 +379,10 @@ footer.foot{border-top:1px solid var(--line);padding:24px 0 44px;font-size:12.5p
       if(state.activeOnly && r.fresh!=='active') return false;
       if(state.favOnly && !favs.has(r.full_name)) return false;
       if(!q) return true;
-      return (r.full_name+' '+r.desc+' '+(r.topics||[]).join(' ')+' '+(r.lang||'')).toLowerCase().includes(q);
+      // 공백으로 나눈 낱말을 모두 포함해야 통과(AND). 한국어·영어 혼합 검색을 위해.
+      const hay = (r.full_name+' '+r.desc+' '+koDesc(r)+' '+koSum(r)+' '+
+                   (r.topics||[]).join(' ')+' '+(r.lang||'')).toLowerCase();
+      return q.split(/\s+/).every(t => hay.includes(t));
     });
     const s = state.sort;
     if(state.view==='surging'){
@@ -387,7 +405,7 @@ footer.foot{border-top:1px solid var(--line);padding:24px 0 44px;font-size:12.5p
           '<span class="fav" data-fav="'+esc(r.full_name)+'" role="button" tabindex="0" aria-pressed="'+favs.has(r.full_name)+'" aria-label="즐겨찾기">★</span>'+
           '<span class="stars">'+kfmt(r.stars)+'</span>'+
         '</div></div>'+
-      '<div class="desc">'+esc(r.desc||'설명 없음')+'</div>'+
+      '<div class="desc">'+esc(koDesc(r) || r.desc || '설명 없음')+'</div>'+
       '<div class="card-foot"><span class="tag">'+esc(CATS[r.cat]||r.cat)+'</span>'+
         (newSet.has(r.full_name)?'<span class="flag">NEW</span>':'')+
         (sg?'<span class="flag up">+'+sg.delta+' ★</span>':'')+
@@ -429,8 +447,15 @@ footer.foot{border-top:1px solid var(--line);padding:24px 0 44px;font-size:12.5p
     $('#drTitle').textContent = r.name;
     const f = FRESH[r.fresh], sg = surgeMap[r.full_name];
     let h = '';
-    h += '<div class="sect"><h3>개요</h3><p>'+esc(r.desc||'설명이 없습니다.')+'</p></div>';
-    if(r.summary) h += '<div class="sect"><h3>README 발췌</h3><p style="font-size:13.5px;color:var(--muted)">'+esc(r.summary)+'…</p></div>';
+    const kd = koDesc(r), ks = koSum(r);
+    h += '<div class="sect"><h3>개요</h3><p>'+esc(kd || r.desc || '설명이 없습니다.')+'</p>'+
+      (kd && r.desc ? '<details class="orig"><summary>원문</summary><p>'+esc(r.desc)+'</p></details>' : '')+
+      '</div>';
+    if(r.summary)
+      h += '<div class="sect"><h3>README 발췌</h3><p style="font-size:13.5px;color:var(--muted)">'+
+        esc(ks || r.summary)+'…</p>'+
+        (ks ? '<details class="orig"><summary>원문</summary><p>'+esc(r.summary)+'…</p></details>' : '')+
+        '</div>';
     h += '<div class="sect"><h3>지표</h3><dl class="kv">'+
       '<dt>분류</dt><dd>'+esc(CATS[r.cat]||r.cat)+(newSet.has(r.full_name)?' · <b>이번 회차 신규</b>':'')+'</dd>'+
       '<dt>스타</dt><dd>'+r.stars.toLocaleString()+' · 포크 '+r.forks.toLocaleString()+
