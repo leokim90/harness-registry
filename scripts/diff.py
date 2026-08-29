@@ -9,6 +9,8 @@ import datetime, json
 from common import DATA, save
 
 WINDOW_DAYS = 7
+MIN_SPAN_DAYS = 2      # 이보다 짧은 간격은 급상승으로 치지 않는다(노이즈)
+MIN_DELTA = 5          # 스타 증가량 하한
 KEEP_SNAPSHOTS = 180
 SURGE_TOP = 12
 
@@ -25,14 +27,18 @@ if hist_path.exists():
             history.append(json.loads(line))
 
 prev = history[-1] if history else None
+# 7일 이상 지난 스냅샷을 우선 쓰고, 없으면 가장 오래된 것을 쓰되
+# 간격이 MIN_SPAN_DAYS에 못 미치면 급상승 계산 자체를 포기한다.
+# (같은 날 두 번 돌린 회차를 기준으로 삼으면 +1 스타가 1위로 올라온다.)
 baseline = None
 for snap in reversed(history):
-    ts = datetime.datetime.fromisoformat(snap["ts"])
-    if (now - ts).days >= WINDOW_DAYS:
+    if (now - datetime.datetime.fromisoformat(snap["ts"])).days >= WINDOW_DAYS:
         baseline = snap
         break
 if baseline is None and history:
-    baseline = history[0]
+    oldest = history[0]
+    if (now - datetime.datetime.fromisoformat(oldest["ts"])).days >= MIN_SPAN_DAYS:
+        baseline = oldest
 
 cur_names = {r["full_name"] for r in repos}
 new = [] if prev is None else sorted(
@@ -51,11 +57,11 @@ if baseline:
         if was is None or was < 50:
             continue
         delta = r["stars"] - was
-        if delta <= 0:
+        if delta < MIN_DELTA:
             continue
         surging.append({"full_name": r["full_name"], "delta": delta,
                         "pct": round(delta / was * 100, 1), "span_days": span})
-    surging.sort(key=lambda x: -x["pct"])
+    surging.sort(key=lambda x: (-x["pct"], -x["delta"]))
     surging = surging[:SURGE_TOP]
 
 save("deltas.json", {"generated": cat["generated"], "window_days": WINDOW_DAYS,
