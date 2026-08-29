@@ -1,0 +1,58 @@
+name: refresh
+
+on:
+  schedule:
+    - cron: "0 0 * * *"      # 매일 09:00 KST
+  workflow_dispatch:          # 수동 실행 버튼
+
+permissions:
+  contents: write             # data/ 커밋
+  pages: write                # Pages 배포
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 수집 및 가공
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # 검색 5,000회/시간으로 완화
+        run: |
+          python scripts/fetch.py --fresh
+          python scripts/curate.py
+          python scripts/readme.py
+          python scripts/diff.py
+
+      - name: 데이터 커밋
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "data: refresh $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: 배포본 구성
+        run: |
+          mkdir -p site/data
+          cp index.html site/
+          cp data/catalog.json data/deltas.json site/data/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

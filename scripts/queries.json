@@ -1,0 +1,140 @@
+{
+  "queries": [
+    [
+      "agents",
+      "topic:claude-code-subagents",
+      100
+    ],
+    [
+      "agents",
+      "claude code subagents collection",
+      100
+    ],
+    [
+      "agents",
+      "topic:subagents",
+      60
+    ],
+    [
+      "agents",
+      "claude code agent collection",
+      60
+    ],
+    [
+      "skills",
+      "topic:claude-skills",
+      100
+    ],
+    [
+      "skills",
+      "topic:agent-skills",
+      100
+    ],
+    [
+      "skills",
+      "topic:claude-code-skills",
+      100
+    ],
+    [
+      "skills",
+      "claude agent skills library",
+      60
+    ],
+    [
+      "skills",
+      "agent skill collection",
+      60
+    ],
+    [
+      "plugins",
+      "topic:claude-code-plugins",
+      100
+    ],
+    [
+      "plugins",
+      "claude code plugin marketplace",
+      60
+    ],
+    [
+      "plugins",
+      "claude plugin marketplace.json",
+      40
+    ],
+    [
+      "harness",
+      "agent harness",
+      60
+    ],
+    [
+      "harness",
+      "topic:claude-code",
+      100
+    ],
+    [
+      "harness",
+      "multi-agent orchestration claude code",
+      60
+    ],
+    [
+      "harness",
+      "claude code hooks workflow",
+      40
+    ],
+    [
+      "mcp-server",
+      "topic:mcp-server",
+      100
+    ],
+    [
+      "mcp-server",
+      "topic:model-context-protocol",
+      100
+    ],
+    [
+      "mcp-server",
+      "\"mcp server\" in:description",
+      100
+    ],
+    [
+      "mcp-server",
+      "topic:mcp-servers",
+      60
+    ],
+    [
+      "mcp-server",
+      "mcp server fastmcp",
+      60
+    ],
+    [
+      "mcp-server",
+      "mcp server typescript sdk",
+      60
+    ],
+    [
+      "mcp-collection",
+      "awesome mcp servers",
+      40
+    ],
+    [
+      "mcp-collection",
+      "mcp servers collection",
+      40
+    ],
+    [
+      "mcp-collection",
+      "mcp registry directory",
+      30
+    ],
+    [
+      "awesome",
+      "awesome claude code",
+      40
+    ],
+    [
+      "awesome",
+      "awesome agent skills",
+      30
+    ]
+  ],
+  "note": "각 항목은 [분류힌트, GitHub 검색 질의, per_page]. 분류는 curate.py가 다시 판정하므로 힌트는 수집 범위 표시용."
+}
