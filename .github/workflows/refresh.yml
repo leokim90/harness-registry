@@ -51,6 +51,8 @@ jobs:
           cp data/catalog.json data/deltas.json site/data/
 
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true   # Pages가 꺼져 있으면 켠다(수동 설정 불필요)
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
