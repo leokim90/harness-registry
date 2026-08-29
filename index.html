@@ -88,6 +88,29 @@ select.ctl{background:var(--panel);border:1px solid var(--line-2);border-radius:
 .toggle[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
 .count-line{padding:14px 0 4px;font-size:13px;color:var(--muted)}
 
+/* 분류 안내 */
+.guide{padding:16px 0 2px}
+.guide-all{border:1px solid var(--line);border-radius:3px;background:var(--panel)}
+.guide-all>summary{cursor:pointer;padding:11px 15px;font-size:12.5px;color:var(--ink-2);
+  list-style:none;display:flex;align-items:center;gap:8px;font-weight:500}
+.guide-all>summary::-webkit-details-marker{display:none}
+.guide-all>summary::before{content:"+";font-family:"IBM Plex Mono",monospace;color:var(--accent-ink);
+  font-weight:600;width:10px}
+.guide-all[open]>summary::before{content:"\2212"}
+.guide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+  gap:0;background:var(--panel);border-top:1px solid var(--line)}
+.gitem{padding:14px 15px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.gitem h4{margin:0 0 4px;font-size:13.5px;font-weight:600;display:flex;align-items:baseline;gap:7px}
+.gitem h4 span{font-size:11.5px;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+.gitem p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}
+.gitem p em{font-style:normal;color:var(--ink-2)}
+.guide-one{border-left:2px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 3px 3px 0}
+.guide-one h4{margin:0 0 3px;font-size:13.5px;font-weight:600}
+.guide-one p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}
+.guide-one p em{font-style:normal;color:var(--ink-2)}
+.legend{padding:9px 0 0;font-size:11.5px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;padding:8px 0 56px}
 .card{position:relative;text-align:left;width:100%;background:var(--panel);border:1px solid var(--line);
   border-radius:3px;padding:16px 16px 13px;display:flex;flex-direction:column;gap:9px;
@@ -196,6 +219,7 @@ footer.foot{border-top:1px solid var(--line);padding:24px 0 44px;font-size:12.5p
 </div>
 
 <main class="wrap">
+  <section class="guide" id="guide"></section>
   <p class="count-line" id="countLine"></p>
   <div class="grid" id="grid"><div class="loading">데이터를 불러오는 중…</div></div>
 </main>
@@ -223,6 +247,16 @@ footer.foot{border-top:1px solid var(--line);padding:24px 0 44px;font-size:12.5p
     plugins:'플러그인', harness:'하네스·오케스트레이션', awesome:'큐레이션 리스트'
   };
   const FRESH = {active:['활발','pulse'], ok:['보통','pulse ok'], stale:['정체','pulse stale']};
+  // 분류마다 무엇이고 어떤 것들이 들어있는지. 용어를 모르는 사람 기준으로 씀.
+  const CAT_DESC = {
+    mcp: 'AI에 외부 기능을 붙이는 연결 모듈. 설치하면 AI가 직접 브라우저를 조작하거나 DB를 조회하거나 디자인 툴을 다룰 수 있게 됩니다. <em>예: playwright-mcp(브라우저 자동화), github-mcp-server(깃허브), blender-mcp(3D), figma-context-mcp(디자인)</em>',
+    'awesome-mcp': 'MCP 서버를 용도별로 정리해 둔 목록 저장소. 필요한 서버를 찾을 때 여기부터 보면 됩니다. <em>예: awesome-mcp-servers</em>',
+    skills: '특정 작업을 어떤 절차와 기준으로 할지 AI에게 가르치는 지침 묶음. 글쓰기·디자인·리서치 같은 작업의 결과 품질을 올립니다. <em>예: anthropics/skills(공식), agent-skills, 문서 작성·디자인 감각 교정 스킬</em>',
+    agents: '역할이 정해진 보조 AI 정의. 코드 리뷰어, 보안 점검자처럼 역할을 쪼개 여러 개를 동시에 굴립니다. <em>예: 100종 이상 서브에이전트 모음집들</em>',
+    plugins: '스킬·에이전트·명령어를 한 번에 설치하는 패키지. 마켓플레이스에서 골라 설치합니다. <em>예: claude-plugins-official(공식 디렉터리)</em>',
+    harness: '여러 AI와 도구를 묶어 하나의 작업 흐름으로 돌리는 전체 구조. 개별 기능이 아니라 뼈대에 해당합니다. <em>예: 멀티 에이전트 오케스트레이션 프레임워크</em>',
+    awesome: '위 항목들을 사람이 직접 골라 정리한 목록. 뭘 써야 할지 모를 때 출발점으로 좋습니다. <em>예: awesome-claude-code</em>'
+  };
   const store = {
     get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
     set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
@@ -296,6 +330,31 @@ footer.foot{border-top:1px solid var(--line);padding:24px 0 44px;font-size:12.5p
     });
   }
 
+  function renderGuide(){
+    const g = document.getElementById('guide');
+    if(state.cat !== 'all'){
+      g.innerHTML = '<div class="guide-one"><h4>'+esc(CATS[state.cat])+'</h4><p>'+CAT_DESC[state.cat]+'</p></div>';
+      return;
+    }
+    const counts = {};
+    REPOS.forEach(r => counts[r.cat]=(counts[r.cat]||0)+1);
+    const open = store.get('reg.guideOpen', true);
+    g.innerHTML = '<details class="guide-all"'+(open?' open':'')+'>'+
+      '<summary>분류 7가지가 각각 무엇인지</summary>'+
+      '<div class="guide-grid">'+
+        Object.keys(CATS).map(c => '<div class="gitem"><h4>'+esc(CATS[c])+
+          ' <span>'+(counts[c]||0)+'개</span></h4><p>'+CAT_DESC[c]+'</p></div>').join('')+
+      '</div></details>'+
+      '<div class="legend">'+
+        '<span><i style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:block"></i>활발 = 최근 30일 내 커밋</span>'+
+        '<span><i style="width:7px;height:7px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--muted);display:block"></i>보통 = 120일 내</span>'+
+        '<span><i style="width:7px;height:7px;border-radius:50%;background:var(--clay);display:block"></i>정체 = 그 이상</span>'+
+        '<span>숫자 = GitHub 스타 수</span>'+
+      '</div>';
+    g.querySelector('details').addEventListener('toggle', e =>
+      store.set('reg.guideOpen', e.currentTarget.open));
+  }
+
   function filtered(){
     const q = state.q.trim().toLowerCase();
     let list = REPOS.filter(r => {
@@ -338,6 +397,7 @@ footer.foot{border-top:1px solid var(--line);padding:24px 0 44px;font-size:12.5p
   }
 
   function render(){
+    renderGuide();
     const list = filtered();
     const label = state.view==='new' ? ' · 신규만' : (state.view==='surging' ? ' · 급상승만' : '');
     $('#countLine').textContent = list.length + '개 표시' + label + (state.q?' · "'+state.q+'" 검색':'');

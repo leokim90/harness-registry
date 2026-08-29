@@ -4,6 +4,13 @@ on:
   schedule:
     - cron: "0 0 * * *"      # 매일 09:00 KST
   workflow_dispatch:          # 수동 실행 버튼
+  push:                       # 코드를 고쳐 올리면 즉시 재배포
+    branches: [main]
+    paths:
+      - "index.html"
+      - "scripts/**"
+      - ".github/workflows/**"
+    # 워크플로가 GITHUB_TOKEN으로 만든 data/ 커밋은 다시 트리거하지 않는다(무한 루프 방지).
 
 permissions:
   contents: write             # data/ 커밋
